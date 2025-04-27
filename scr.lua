@@ -424,164 +424,83 @@ function Library:create(options)
 
 
 
-	if options.Link:sub(-1, -1) == "/" then
-		options.Link = options.Link:sub(1, -2)
-	end
-
 	if options.Theme.Light then
-		self.darken, self.lighten = self.lighten, self.darken
-	end
+        self.darken, self.lighten = self.lighten, self.darken
+    end
+    
+    self.CurrentTheme = options.Theme
+    
+    local gui = self:object("ScreenGui", {
+        Parent = (RunService:IsStudio() and LocalPlayer.PlayerGui) or game:GetService("CoreGui"),
+        ZIndexBehavior = Enum.ZIndexBehavior.Global
+    })
+    
+    local notificationHolder = gui:object("Frame", {
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -30,1, -30),
+        Size = UDim2.new(0, 300, 1, -60)
+    })
+    
+    local _notiHolderList = notificationHolder:object("UIListLayout", {
+        Padding = UDim.new(0, 20),
+        VerticalAlignment = Enum.VerticalAlignment.Bottom
+    })
+    
+    local core = gui:object("Frame", {
+        Size = UDim2.new(),
+        Theme = {BackgroundColor3 = "Main"},
+        Centered = true,
+        ClipsDescendants = true		
+    }):round(10)
+    
+    core:fade(true, nil, 0.2, true)
+    core:fade(false, nil, 0.4)
+    core:tween({Size = options.Size, Length = 0.3}, function()
+        core.ClipsDescendants = false
+    end)
+    
+    do
+        local S, Event = pcall(function()
+            return core.MouseEnter
+        end)
+    
+        if S then
+            core.Active = true;
+    
+            Event:connect(function()
+                local Input = core.InputBegan:connect(function(Key)
+                    if Key.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local ObjectPosition = Vector2.new(Mouse.X - core.AbsolutePosition.X, Mouse.Y - core.AbsolutePosition.Y)
+                        while RunService.RenderStepped:wait() and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+    
+                            if Library.LockDragging then
+                                local FrameX, FrameY = math.clamp(Mouse.X - ObjectPosition.X, 0, gui.AbsoluteSize.X - core.AbsoluteSize.X), math.clamp(Mouse.Y - ObjectPosition.Y, 0, gui.AbsoluteSize.Y - core.AbsoluteSize.Y)
+                                core:tween{
+                                    Position = UDim2.fromOffset(FrameX + (core.Size.X.Offset * core.AnchorPoint.X), FrameY + (core.Size.Y.Offset * core.AnchorPoint.Y)),
+                                    Length = Library.DragSpeed
+                                }
+                            else
+                                core:tween{
+                                    Position = UDim2.fromOffset(Mouse.X - ObjectPosition.X + (core.Size.X.Offset * core.AnchorPoint.X), Mouse.Y - ObjectPosition.Y + (core.Size.Y.Offset * core.AnchorPoint.Y)),
+                                    Length = Library.DragSpeed	
+                                }
+                            end	
+                        end
+                    end
+                end)
+    
+                local Leave
+                Leave = core.MouseLeave:connect(function()
+                    Input:disconnect()
+                    Leave:disconnect()
+                end)
+            end)
+        end
+    end
+    
 
-	self.CurrentTheme = options.Theme
-
-	local gui = self:object("ScreenGui", {
-		Parent = (RunService:IsStudio() and LocalPlayer.PlayerGui) or game:GetService("CoreGui"),
-		ZIndexBehavior = Enum.ZIndexBehavior.Global
-	})
-
-	local notificationHolder = gui:object("Frame", {
-		AnchorPoint = Vector2.new(1, 1),
-		BackgroundTransparency = 1,
-		Position = UDim2.new(1, -30,1, -30),
-		Size = UDim2.new(0, 300, 1, -60)
-	})
-
-	local _notiHolderList = notificationHolder:object("UIListLayout", {
-		Padding = UDim.new(0, 20),
-		VerticalAlignment = Enum.VerticalAlignment.Bottom
-	})
-
-	local core = gui:object("Frame", {
-		Size = UDim2.new(),
-		Theme = {BackgroundColor3 = "Main"},
-		Centered = true,
-		ClipsDescendants = true		
-	}):round(10)
-
-	core:fade(true, nil, 0.2, true)
-
-
-	core:fade(false, nil, 0.4)
-	core:tween({Size = options.Size, Length = 0.3}, function()
-		core.ClipsDescendants = false
-	end)
-
-	do
-		local S, Event = pcall(function()
-			return core.MouseEnter
-		end)
-
-		if S then
-			core.Active = true;
-
-			Event:connect(function()
-				local Input = core.InputBegan:connect(function(Key)
-					if Key.UserInputType == Enum.UserInputType.MouseButton1 then
-						local ObjectPosition = Vector2.new(Mouse.X - core.AbsolutePosition.X, Mouse.Y - core.AbsolutePosition.Y)
-						while RunService.RenderStepped:wait() and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-
-							if Library.LockDragging then
-								local FrameX, FrameY = math.clamp(Mouse.X - ObjectPosition.X, 0, gui.AbsoluteSize.X - core.AbsoluteSize.X), math.clamp(Mouse.Y - ObjectPosition.Y, 0, gui.AbsoluteSize.Y - core.AbsoluteSize.Y)
-								core:tween{
-									Position = UDim2.fromOffset(FrameX + (core.Size.X.Offset * core.AnchorPoint.X), FrameY + (core.Size.Y.Offset * core.AnchorPoint.Y)),
-									Length = Library.DragSpeed
-								}
-							else
-								core:tween{
-									Position = UDim2.fromOffset(Mouse.X - ObjectPosition.X + (core.Size.X.Offset * core.AnchorPoint.X), Mouse.Y - ObjectPosition.Y + (core.Size.Y.Offset * core.AnchorPoint.Y)),
-									Length = Library.DragSpeed	
-								}
-							end	
-							--[[core.AbsoluteObject:TweenPosition(
-								UDim2.new(0, Mouse.X - ObjectPosition.X + (core.Size.X.Offset * core.AnchorPoint.X), 0, Mouse.Y - ObjectPosition.Y + (core.Size.Y.Offset * core.AnchorPoint.Y)),           
-								Enum.EasingDirection.In,
-								Enum.EasingStyle.Sine,
-								Library.DragSpeed,
-								true
-								
-								--
-								core:tween{
-								Position = UDim2.new(0, Mouse.X - ObjectPosition.X + (core.Size.X.Offset * core.AnchorPoint.X), 0, Mouse.Y - ObjectPosition.Y + (core.Size.Y.Offset * core.AnchorPoint.Y)),
-								Direction = Enum.EasingDirection.Out,
-								Style = Enum.EasingStyle.Quad,
-								Length = Library.DragSpeed
-							}
-							)]]
-						end
-					end
-				end)
-
-				local Leave
-				Leave = core.MouseLeave:connect(function()
-					Input:disconnect()
-					Leave:disconnect()
-				end)
-			end)
-		end
-	end
-
-	rawset(core, "oldSize", options.Size)
-
-	self.mainFrame = core
-
-	local tabButtons = core:object("ScrollingFrame", {
-		Size = UDim2.new(1, -40, 0, 25),
-		Position = UDim2.fromOffset(5, 5),
-		BackgroundTransparency = 1,
-		ClipsDescendants = true,
-		ScrollBarThickness = 0,
-		ScrollingDirection = Enum.ScrollingDirection.X,
-		AutomaticCanvasSize = Enum.AutomaticSize.X
-	})
-
-	tabButtons:object("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		HorizontalAlignment = Enum.HorizontalAlignment.Left,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 4)
-	})
-
-	local closeButton = core:object("ImageButton", {
-		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(14, 14),
-		Position = UDim2.new(1, -11, 0, 11),
-		Theme = {ImageColor3 = "StrongText"},
-		Image = "http://www.roblox.com/asset/?id=8497487650",
-		AnchorPoint = Vector2.new(1)
-	})
-
-	closeButton.MouseEnter:connect(function()
-		closeButton:tween{ImageColor3 = Color3.fromRGB(255, 124, 142)}
-	end)
-
-	closeButton.MouseLeave:connect(function()
-		closeButton:tween{ImageColor3 = Library.CurrentTheme.StrongText}
-	end)
-
-	local function closeUI()
-		core.ClipsDescendants = true
-		core:fade(true)
-		wait(0.1)
-		core:tween({Size = UDim2.new()}, function()
-			gui.AbsoluteObject:Destroy()
-		end)
-	end
-
-	if getgenv then
-		getgenv().MercuryUI = closeUI
-	end
-
-	closeButton.MouseButton1Click:connect(function()
-		closeUI()
-	end)
-
-	local urlBar = core:object("Frame", {
-		Size = UDim2.new(1, -10, 0, 25),
-		Position = UDim2.new(0, 5,0, 35),
-		Theme = {BackgroundColor3 = "Secondary"}
-	}):round(5)
-
-    local searchIcon = urlBar:object("ImageLabel", {
+	local searchIcon = urlBar:object("ImageLabel", {
         AnchorPoint = Vector2.new(0, .5),
         Position = UDim2.new(0, 5, 0.5, 0),
         Theme = {ImageColor3 = "Tertiary"},
@@ -595,89 +514,90 @@ function Library:create(options)
         Position = UDim2.new(0, 26, 0.5, 0),
         BackgroundTransparency = 1,
         Size = UDim2.new(1, -30, .6, 0),
-        -- Text is now removed
         Theme = {TextColor3 = "WeakText"},
         TextSize = 14,
         TextScaled = false,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     
-
-	Library.UrlLabel = link
-	Library.Url = options.Link
-
-	local shadowHolder = core:object("Frame", {
-		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(1, 1),
-		ZIndex = 0
-	})
-
-	local shadow = shadowHolder:object("ImageLabel", {
-		Centered = true,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 47,1, 47),
-		ZIndex = 0,
-		Image = "rbxassetid://6015897843",
-		ImageColor3 = Color3.new(0, 0, 0),
-		ImageTransparency = .6,
-		SliceCenter = Rect.new(47, 47, 450, 450),
-		ScaleType = Enum.ScaleType.Slice,
-		SliceScale = 1
-	})
-
-	local content = core:object("Frame", {
-		Theme = {BackgroundColor3 = {"Secondary", -10}},
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -20),
-		Size = UDim2.new(1, -10, 1, -86)
-	}):round(7) -- Sept
-
-	local status = core:object("TextLabel", {
-		AnchorPoint = Vector2.new(0, 1),
-		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 5, 1, -6),
-		Size = UDim2.new(0.2, 0, 0, 10),
-		Font = Enum.Font.SourceSans,
-		Text = "Status | Idle",
-		Theme = {TextColor3 = "Tertiary"},
-		TextSize = 14,
-		TextXAlignment = Enum.TextXAlignment.Left
-	})
-
-	local homeButton = tabButtons:object("TextButton", {
-		Name = "hehehe siuuuuuuuuu",
-		BackgroundTransparency = 0,
-		Theme = {BackgroundColor3 = "Secondary"},
-		Size = UDim2.new(0, 125, 0, 25)
-	}):round(5)
-
-	local homeButtonText = homeButton:object("TextLabel", {
-		Theme = {TextColor3 = "StrongText"},
-		AnchorPoint = Vector2.new(0, .5),
-		BackgroundTransparency = 1,
-		TextSize = 14,
-		Text = options.Name,
-		Position = UDim2.new(0, 25, 0.5, 0),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Size = UDim2.new(1, -45, 0.5, 0),
-		Font = Enum.Font.SourceSans,
-		TextTruncate = Enum.TextTruncate.AtEnd
-	})
-
-	local homeButtonIcon = homeButton:object("ImageLabel", {
-		AnchorPoint = Vector2.new(0, 0.5),
-		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 5, 0.5, 0),
-		Size = UDim2.new(0, 15, 0, 15),
-		Image = "http://www.roblox.com/asset/?id=8569322835",
-		Theme = {ImageColor3 = "StrongText"}
-	})
-
-	local homePage = content:object("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		Centered = true,
-		BackgroundTransparency = 1
-	})
+    Library.UrlLabel = link
+    -- Removed reference to options.Link
+    
+    local shadowHolder = core:object("Frame", {
+        BackgroundTransparency = 1,
+        Size = UDim2.fromScale(1, 1),
+        ZIndex = 0
+    })
+    
+    local shadow = shadowHolder:object("ImageLabel", {
+        Centered = true,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 47,1, 47),
+        ZIndex = 0,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0, 0, 0),
+        ImageTransparency = .6,
+        SliceCenter = Rect.new(47, 47, 450, 450),
+        ScaleType = Enum.ScaleType.Slice,
+        SliceScale = 1
+    })
+    
+    local content = core:object("Frame", {
+        Theme = {BackgroundColor3 = {"Secondary", -10}},
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.new(0.5, 0, 1, -20),
+        Size = UDim2.new(1, -10, 1, -86)
+    }):round(7) -- Sept
+    
+    local status = core:object("TextLabel", {
+        AnchorPoint = Vector2.new(0, 1),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 5, 1, -6),
+        Size = UDim2.new(0.2, 0, 0, 10),
+        Font = Enum.Font.SourceSans,
+        Text = "Status | Idle",
+        Theme = {TextColor3 = "Tertiary"},
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    
+    local homeButton = tabButtons:object("TextButton", {
+        Name = "hehehe siuuuuuuuuu",
+        BackgroundTransparency = 0,
+        Theme = {BackgroundColor3 = "Secondary"},
+        Size = UDim2.new(0, 125, 0, 25)
+    }):round(5)
+    
+    local homeButtonText = homeButton:object("TextLabel", {
+        Theme = {TextColor3 = "StrongText"},
+        AnchorPoint = Vector2.new(0, .5),
+        BackgroundTransparency = 1,
+        TextSize = 14,
+        Text = options.Name,
+        Position = UDim2.new(0, 25, 0.5, 0),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Size = UDim2.new(1, -45, 0.5, 0),
+        Font = Enum.Font.SourceSans,
+        TextTruncate = Enum.TextTruncate.AtEnd
+    })
+    
+    local homeButtonIcon = homeButton:object("ImageLabel", {
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 5, 0.5, 0),
+        Size = UDim2.new(0, 15, 0, 15),
+        Image = "http://www.roblox.com/asset/?id=8569322835",
+        Theme = {ImageColor3 = "StrongText"}
+    })
+    
+    local homePage = content:object("Frame", {
+        Size = UDim2.fromScale(1, 1),
+        Centered = true,
+        BackgroundTransparency = 1
+    })
+    
+    -- The rest of the code follows...
+    
 
 	local tabs = {}
 	selectedTab = homeButton
